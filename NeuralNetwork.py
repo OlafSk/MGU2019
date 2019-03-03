@@ -4,6 +4,19 @@ from losses import *
 
 
 class NeuralNetwork:
+    """Multi layer network.
+
+    Parameters
+    ----------
+    loss: string ("mean_squared_error")
+        Specifies loss to train the function on
+
+    Attributes
+    ----------
+    layers: list
+        list contaning all layers within network.
+    """
+
     def __init__(self, loss):
         #Initialize list of layers to empty list
         aritificial_layer = Layer(0,0, "relu")
@@ -13,14 +26,21 @@ class NeuralNetwork:
 
     def add(self, layer):
         """
-        add layer to model
+        Function used to add layer to network:
+        Parameters
+        ----------
+        layer: Layer,
+            layer which will be added to network.
+        Returns
+        -------
+        None
         """
         assert isinstance(layer, Layer)
         self.layers.append(layer)
 
     def forward_pass(self, X):
         """
-        forward pass of data through layers
+        Forward pass of X through layers
         """
         X = X.copy()
         for layer in self.layers[1:]:
@@ -57,6 +77,10 @@ class NeuralNetwork:
                         layer.backward_activation_function(layer.Z) / X.shape[0]).sum(axis=0, keepdims=True)
 
     def train(self, X, y, epochs = 1, learning_rate = 0.01, momentum = 0.99, verbose=True):
+        """
+        Method to train the network
+        Momentum is not implemented yet.
+        """
         for i in range(epochs):
             self.backward_pass(X, y)
             for layer in self.layers:
