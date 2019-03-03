@@ -1,24 +1,5 @@
 import numpy as np
-def sigmoid(x):
-    return np.exp(x) / np.sum(np.exp(x))
-
-def relu(x):
-    return np.where(x > 0, x, 0)
-
-def b_sigmoid(x):
-    return sigmoid(x) * (1 - sigmoid(x))
-
-def b_relu(x):
-    return np.where(x > 0, 1, 0)
-
-FORWARD_FUNCTION_DICT = {
-    "sigmoid": sigmoid,
-    "relu": relu
-}
-BACKWARD_FUNCTION_DICT = {
-    "sigmoid": b_sigmoid,
-    "relu": b_relu
-}
+from activation_functions import *
 
 class Layer:
     """Single layer in multi-layer perceptron.
@@ -49,7 +30,7 @@ class Layer:
         #Generate weight matrix with normal distribution
         self.W = np.random.normal(size = (self.input_shape, self.units))
         #initialize bias
-        self.B = np.zeros(self.units) + 1
+        self.B = np.zeros((1, self.units)) + 1
         #Generate derrivative matrix for weights and bias
         self.DW = np.zeros_like(self.W)
         self.DB = np.zeros_like(self.B)
