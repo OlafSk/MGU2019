@@ -17,12 +17,13 @@ class NeuralNetwork:
         list contaning all layers within network.
     """
 
-    def __init__(self, loss):
+    def __init__(self, loss, momentum):
         #Initialize list of layers to empty list
         aritificial_layer = Layer(0,0, "relu")
         self.layers = [aritificial_layer]
         self.loss = LOSSES[loss]
         self.b_loss = B_LOSSES[loss]
+        self.momentum = momentum
 
     def add(self, layer):
         """
@@ -71,9 +72,9 @@ class NeuralNetwork:
             next_layer = self.layers[i+1]
             prev_layer = self.layers[i-1]
             layer = self.layers[i]
-            layer.DW = (next_layer.W.T.sum(axis=0, keepdims=True) @ next_layer.DW.sum(axis=1, keepdims=True) * prev_layer.forward.T @
+            layer.DW = self.momentum * layer.DW + (1-self.momentum) * (next_layer.W.T.sum(axis=0, keepdims=True) @ next_layer.DW.sum(axis=1, keepdims=True) * prev_layer.forward.T @
                         layer.backward_activation_function(layer.Z)  / X.shape[0])
-            layer.DB = (next_layer.W.T.sum(axis=0, keepdims=True) @ next_layer.DW.sum(axis=1, keepdims=True) *
+            layer.DB = self.momentum * layer.DB + (1-self.momentum)*(next_layer.W.T.sum(axis=0, keepdims=True) @ next_layer.DW.sum(axis=1, keepdims=True) *
                         layer.backward_activation_function(layer.Z) / X.shape[0]).sum(axis=0, keepdims=True)
 
     def train(self, X, y, epochs = 1, learning_rate = 0.01, momentum = 0.99, verbose=True):
