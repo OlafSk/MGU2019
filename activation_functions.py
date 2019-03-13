@@ -1,6 +1,6 @@
 import numpy as np
 def sigmoid(x):
-    return np.exp(x) / np.sum(np.exp(x))
+    return np.exp(x) / (1 + np.exp(x))
 
 def relu(x):
     return np.where(x > 0, x, 0)
@@ -12,7 +12,7 @@ def b_sigmoid(x):
     return sigmoid(x) * (1 - sigmoid(x))
 
 def b_linear(x):
-    return 1
+    return np.zeros_like(x) + 1
 
 def b_relu(x):
     return np.where(x > 0, 1, 0)
@@ -25,5 +25,5 @@ FORWARD_FUNCTION_DICT = {
 BACKWARD_FUNCTION_DICT = {
     "sigmoid": b_sigmoid,
     "relu": b_relu,
-    "linear" : linear
+    "linear" : b_linear
 }

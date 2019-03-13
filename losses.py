@@ -1,9 +1,9 @@
 import numpy as np
 def mean_squared_error(y_hat, y):
-    return np.sum((y - y_hat) ** 2, axis=-1) * 0.5
+    return np.sum((y - y_hat) ** 2, axis=-1) * 0.5 / y.shape[0]
 
 def b_mean_squared_error(y_hat, y):
-    return np.sum((y - y_hat), axis=-1) * 2
+    return (y - y_hat)
 
 
 LOSSES = {

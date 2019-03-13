@@ -28,16 +28,16 @@ class Layer:
         self.forward_activation_function = FORWARD_FUNCTION_DICT[activation_function]
         self.backward_activation_function = BACKWARD_FUNCTION_DICT[activation_function]
         #Generate weight matrix with normal distribution
-        self.W = np.random.normal(size = (self.input_shape, self.units))
+        self.W = np.random.normal(size = (self.units, self.input_shape))
         #initialize bias
-        self.B = np.zeros((1, self.units)) + 1
+        self.B = np.zeros((self.units, 1)) + 1
         #Generate derrivative matrix for weights and bias
         self.DW = np.zeros_like(self.W)
         self.DB = np.zeros_like(self.B)
 
     def forward_pass(self, X):
-        self.Z = X @ self.W + self.B
-        self.forward = self.forward_activation_function(X @ self.W + self.B)
+        self.Z = np.dot(self.W, X) + self.B
+        self.forward = self.forward_activation_function(np.dot(self.W, X) + self.B)
         return self.forward
 
     def backward_pass(self, prev_G, X):
@@ -47,5 +47,5 @@ class Layer:
 
 
 layer = Layer(units = 10, input_shape = 2, activation_function = "sigmoid")
-
-layer.forward_pass(np.random.normal(size=(3,2)))
+layer.W
+layer.forward_pass(np.random.normal(size=(2,1)))
