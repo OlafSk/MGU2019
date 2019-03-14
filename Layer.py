@@ -34,7 +34,10 @@ class Layer:
         #Generate derrivative matrix for weights and bias
         self.DW = np.zeros_like(self.W)
         self.DB = np.zeros_like(self.B)
+        self.last_grad_W = np.zeros_like(self.DW)
+        self.last_grad_DB = np.zeros_like(self.DB)
 
+        
     def forward_pass(self, X):
         self.Z = np.dot(self.W, X) + self.B
         self.forward = self.forward_activation_function(np.dot(self.W, X) + self.B)
