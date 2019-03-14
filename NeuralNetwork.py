@@ -67,7 +67,7 @@ class NeuralNetwork:
     def backward_pass(self, X, y):
         "first computeted manualy, next computed in the loop"
         for i in range(X.shape[0]):
-            X_ = X[i, :]
+            X_ = X[i, :].reshape(-1,1)
             y_ = y[i, :]
             if y_.shape[0] > 1:
                 y_ = y_.reshape(-1,1)
