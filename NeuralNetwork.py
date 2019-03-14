@@ -39,14 +39,20 @@ class NeuralNetwork:
         assert isinstance(layer, Layer)
         self.layers.append(layer)
 
+    def single_forward_pass(self, X):
+        for layer in self.layers[1:]:
+            X = layer.forward_pass(X)
+        return X
+
     def forward_pass(self, X):
         """
         Forward pass of X through layers
         """
-        X = X.copy()
-        for layer in self.layers[1:]:
-            X = layer.forward_pass(X)
-        return X
+        y = np.zeros((X.shape[0], self.layers[-1].units))
+        for i in range(X.shape[0]):
+            X_ = X[i, :].reshape(-1,1)
+            y[i,:] = self.single_forward_pass(X_).reshape(1, self.layers[-1].units)
+        return y
 
     def calculate_loss(self, X, y):
         """
@@ -60,22 +66,33 @@ class NeuralNetwork:
 
     def backward_pass(self, X, y):
         "first computeted manualy, next computed in the loop"
-        self.layers[0].forward = X
-        last_layer = self.layers[-1]
-        last_layer.DW = (self.calculate_b_loss(X, y) * self.layers[-2].forward.T @
-                    self.layers[-1].backward_activation_function(self.layers[-1].forward) /
-                    X.shape[0])
-        last_layer.DB = (self.calculate_b_loss(X, y) @
-                    self.layers[-1].backward_activation_function(self.layers[-1].forward) /
-                    X.shape[0]).sum(axis=0, keepdims=True)
-        for i in range(len(self.layers[1:-1]), 0, -1):
-            next_layer = self.layers[i+1]
-            prev_layer = self.layers[i-1]
-            layer = self.layers[i]
-            layer.DW = self.momentum * layer.DW + (1-self.momentum) * (next_layer.W.T.sum(axis=0, keepdims=True) @ next_layer.DW.sum(axis=1, keepdims=True) * prev_layer.forward.T @
-                        layer.backward_activation_function(layer.Z)  / X.shape[0])
-            layer.DB = self.momentum * layer.DB + (1-self.momentum)*(next_layer.W.T.sum(axis=0, keepdims=True) @ next_layer.DW.sum(axis=1, keepdims=True) *
-                        layer.backward_activation_function(layer.Z) / X.shape[0]).sum(axis=0, keepdims=True)
+        for i in range(X.shape[0]):
+            X_ = X[i, :]
+            y_ = y[i, :]
+            if y_.shape[0] > 1:
+                y_ = y_.reshape(-1,1)
+            self.single_forward_pass(X_)
+            self.layers[0].forward = X_
+            last_layer = self.layers[-1]
+            last_layer.semi_grad = ((self.layers[-1].forward - y_) * self.layers[-1].backward_activation_function(self.layers[-1].Z)).sum(axis=1, keepdims=True)
+            last_layer.DB += self.layers[-1].semi_grad / X.shape[0]
+            last_layer.DW += np.dot(last_layer.semi_grad, self.layers[-2].forward.reshape(1, -1)) / X.shape[0]
+            semi_grad = last_layer.semi_grad
+            for i in range(2, len(self.layers)):
+                deriv = self.layers[-i].backward_activation_function(self.layers[-i].Z)
+                semi_grad = np.dot(self.layers[-i+1].W.reshape(self.layers[-i+1].W.shape[1], self.layers[-i+1].W.shape[0]), semi_grad) * deriv
+                self.layers[-i].DB += semi_grad / X.shape[0]
+                self.layers[-i].DW += np.dot(semi_grad, self.layers[-i-1].forward.T) / X.shape[0]
+
+            #layer.DW = self.momentum * layer.DW + ((1-self.momentum) * (layer.semi_grad @ prev_layer.forward))
+            #layer.DB = self.momentum * layer.DB + ((1-self.momentum) * layer.semi_grad.mean(axis=-1).sum())
+            #layer.DB = layer.semi_grad.mean(axis=-1).sum() / X.shape[0]
+
+    def zero_gradients(self):
+        for layer in self.layers:
+            layer.DW = np.zeros_like(layer.DW)
+            layer.DB = np.zeros_like(layer.DB)
+
 
     def train(self, X, y, epochs = 1, learning_rate = 0.01, momentum = 0.99, verbose=True):
         """
@@ -83,9 +100,12 @@ class NeuralNetwork:
         Momentum is not implemented yet.
         """
         for i in range(epochs):
+            self.zero_gradients()
             self.backward_pass(X, y)
             for layer in self.layers:
-                layer.W += layer.DW * learning_rate
-                layer.B += layer.DB * learning_rate
+                layer.W -= layer.DW * learning_rate
+                layer.last_grad_W = layer.DW
+                layer.B -= layer.DB * learning_rate
+                layer.last_grad_B = layer.DB
             if verbose:
                 print(i)
