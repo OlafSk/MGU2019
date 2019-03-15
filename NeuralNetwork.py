@@ -84,9 +84,6 @@ class NeuralNetwork:
                 self.layers[-i].DB += semi_grad / X.shape[0]
                 self.layers[-i].DW += np.dot(semi_grad, self.layers[-i-1].forward.T) / X.shape[0]
 
-            #layer.DW = self.momentum * layer.DW + ((1-self.momentum) * (layer.semi_grad @ prev_layer.forward))
-            #layer.DB = self.momentum * layer.DB + ((1-self.momentum) * layer.semi_grad.mean(axis=-1).sum())
-            #layer.DB = layer.semi_grad.mean(axis=-1).sum() / X.shape[0]
 
     def zero_gradients(self):
         for layer in self.layers:
@@ -94,18 +91,28 @@ class NeuralNetwork:
             layer.DB = np.zeros_like(layer.DB)
 
 
-    def train(self, X, y, epochs = 1, learning_rate = 0.01, momentum = 0.99, verbose=True):
+    def train(self, X, y, X_test=None, y_test=None, epochs = 1, learning_rate = 0.01, momentum = 0.99, verbose=True):
         """
         Method to train the network
         Momentum is not implemented yet.
         """
+        train_loss = [0] * epochs
+        test_loss = [0] * epochs
+        grad_norm = [0] * epochs
         for i in range(epochs):
+
             self.zero_gradients()
             self.backward_pass(X, y)
             for layer in self.layers:
                 layer.W -= layer.DW * learning_rate
+                grad_norm[i] += np.linalg.norm(layer.DW, ord="fro")
                 layer.last_grad_W = layer.DW
                 layer.B -= layer.DB * learning_rate
                 layer.last_grad_B = layer.DB
             if verbose:
                 print(i)
+            train_loss[i] = self.loss(y, self.forward_pass(X)).sum() / X.shape[0]
+            if X_test is not None and y_test is not None:
+                test_loss[i] =self.loss(y_test, self.forward_pass(X_test)).sum() / X_train.shape[0]
+
+        return train_loss, test_loss, grad_norm
