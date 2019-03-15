@@ -113,6 +113,6 @@ class NeuralNetwork:
                 print(i)
             train_loss[i] = self.loss(y, self.forward_pass(X)).sum() / X.shape[0]
             if X_test is not None and y_test is not None:
-                test_loss[i] =self.loss(y_test, self.forward_pass(X_test)).sum() / X_train.shape[0]
+                test_loss[i] =self.loss(y_test, self.forward_pass(X_test)).sum() / X_test.shape[0]
 
         return train_loss, test_loss, grad_norm
