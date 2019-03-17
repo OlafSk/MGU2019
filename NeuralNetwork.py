@@ -81,8 +81,10 @@ class NeuralNetwork:
             for i in range(2, len(self.layers)):
                 deriv = self.layers[-i].backward_activation_function(self.layers[-i].Z)
                 semi_grad = np.dot(self.layers[-i+1].W.reshape(self.layers[-i+1].W.shape[1], self.layers[-i+1].W.shape[0]), semi_grad) * deriv
-                self.layers[-i].DB += semi_grad / X.shape[0]
-                self.layers[-i].DW += np.dot(semi_grad, self.layers[-i-1].forward.T) / X.shape[0]
+                self.layers[-i].DB += self.layers[-i].last_grad_B * self.momentum + (1-self.momentum) * self.layers[-i].semi_grad / X.shape[0]
+                self.layers[-i].DW += self.layers[-i].last_grad_W * self.momentum + (1-self.momentum) * np.dot(semi_grad, self.layers[-i-1].forward.T) / X.shape[0]
+                self.layers[-i].last_grad_W = self.layers[-i].DW
+                self.layers[-i].last_grad_B = self.layers[-i].DB
 
 
     def zero_gradients(self):
