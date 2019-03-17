@@ -110,7 +110,7 @@ class NeuralNetwork:
                 layer.B -= layer.DB * learning_rate
                 layer.last_grad_B = layer.DB
             if verbose:
-                print(i)
+                print("\r%d" % i, end="")
             train_loss[i] = self.loss(y, self.forward_pass(X)).sum() / X.shape[0]
             if X_test is not None and y_test is not None:
                 test_loss[i] =self.loss(y_test, self.forward_pass(X_test)).sum() / X_test.shape[0]
