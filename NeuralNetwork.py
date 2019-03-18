@@ -77,7 +77,7 @@ class NeuralNetwork:
             if self.loss == "mse":
                 last_layer.semi_grad = ((self.layers[-1].forward - y_) * self.layers[-1].backward_activation_function(self.layers[-1].Z)).sum(axis=1, keepdims=True)
             if self.loss == "cross_entropy":
-                last_layer.semi_grad = ((1-y_)/(1-self.layers[-1].forward]) - y_/self.layers[-1].forward]) * self.layers[-1].backward_activation_function(self.layers[-1].Z).sum(axis=1, keepdims=True)
+                last_layer.semi_grad = (((1-y_)/(1-self.layers[-1].forward) - y_/self.layers[-1].forward) * self.layers[-1].backward_activation_function(self.layers[-1].Z)).sum(axis=1, keepdims=True)
             last_layer.DB += self.layers[-1].semi_grad / X.shape[0]
             last_layer.DW += np.dot(last_layer.semi_grad, self.layers[-2].forward.reshape(1, -1)) / X.shape[0]
             semi_grad = last_layer.semi_grad
