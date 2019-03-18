@@ -39,7 +39,7 @@ FORWARD_FUNCTION_DICT = {
 BACKWARD_FUNCTION_DICT = {
     "sigmoid": b_sigmoid,
     "relu": b_relu,
-    "tanh": tanh,
     "linear" : b_linear,
+    "tanh": b_tanh,
     "softmax": b_softmax
 }
