@@ -21,6 +21,7 @@ class NeuralNetwork:
         #Initialize list of layers to empty list
         aritificial_layer = Layer(0,0, "relu")
         self.layers = [aritificial_layer]
+        self.loss_name = loss
         self.loss = LOSSES[loss]
         self.b_loss = B_LOSSES[loss]
         self.momentum = momentum
@@ -74,11 +75,11 @@ class NeuralNetwork:
             self.single_forward_pass(X_)
             self.layers[0].forward = X_
             last_layer = self.layers[-1]
-            if self.loss == "mse":
+            if self.loss_name == "mse":
                 last_layer.semi_grad = ((self.layers[-1].forward - y_) * self.layers[-1].backward_activation_function(self.layers[-1].Z)).sum(axis=1, keepdims=True)
-            if self.loss == "cross_entropy":
+            if self.loss_name == "cross_entropy":
                 last_layer.semi_grad = (((1-y_)/(1-self.layers[-1].forward) - y_/self.layers[-1].forward) * self.layers[-1].backward_activation_function(self.layers[-1].Z)).sum(axis=1, keepdims=True)
-            last_layer.DB += self.layers[-1].semi_grad / X.shape[0]
+            last_layer.DB += last_layer.semi_grad / X.shape[0]
             last_layer.DW += np.dot(last_layer.semi_grad, self.layers[-2].forward.reshape(1, -1)) / X.shape[0]
             semi_grad = last_layer.semi_grad
             for i in range(2, len(self.layers)):
