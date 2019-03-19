@@ -277,6 +277,7 @@ Poniższe cztery pary wykresów pokazują błąd na zbiorze traingowym, testowym
 >             X, y,
 >             X_test, y_test,
 >             epochs=50, learning_rate=1e-4, momentum=0, verbose=False)
+
 >         plt.figure(figsize=(16,5))
 >         plt.subplot(1, 2, 1)
 >         plt.plot(loss, label='train_loss')
