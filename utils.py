@@ -11,7 +11,8 @@ def plot_decision_surface(nn, X, n_samples = 50, proba=True, many_classes=False,
         z[i] = nn.forward_pass(np.array([[flat_x[i], flat_y[i]]])) if not many_classes else nn.forward_pass(np.array([[flat_x[i], flat_y[i]]])).argmax(axis=-1)
     if not proba:
         z = z > 0.5
-    plt.contourf(xx,yy, z.reshape(xx.shape[0],xx.shape[1]),
+    if axis is not None:
+        return axis.contourf(xx,yy, z.reshape(xx.shape[0],xx.shape[1]),
     **kwargs)
     return z
 
