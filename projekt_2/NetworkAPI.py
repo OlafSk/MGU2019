@@ -41,8 +41,7 @@ def format_time(seconds):
 
 
 class NetworkAPI():
-    def __init__(self, model, dataloaders, name_to_save, lr=0.01,
-        opimizer=optim.SGD(self.model.parameters(), lr=self.lr)):
+    def __init__(self, model, dataloaders, name_to_save, opimizer, lr=0.01):
         self.model=model,
         self.model=self.model[0]
         self.dataloaders=dataloaders
