@@ -14,6 +14,95 @@ output:
 \thispagestyle{empty}
 \newpage
 
+
+
+## Porównanie wpływu liczby warstw konwolucyjnych na wyniki algorytmu
+
+W poniższej sekcji porównam wpływ liczby warstw konwolucjnych do wyników sieci.
+Zbuduję 3 sieci, składającą się z 3 paczek warstw konwolucyjnych gdzie każda paczka składa się z dwóch warstw konwolucyjnych oraz z warstwy MaxPool.
+
+Sprawdźmy ile wag ma każda z sieci.
+
+```
+Sieć duża ma 1370474 parametrów
+Sieć średnia ma 332970 parametrów
+Sieć mała ma 275210 parametrów
+```
+
+Po wytrenowaniu sieci stosując metodę wczesnego stopowania po nieosiągnięciu poprawy na zbiorze walidacyjnym przy więcej niż 10 epoków sieci uzyskały następujące wyniki:
+
+![png](images/Raport PD-2/output_7_0.png){height=30%}
+
+
+Jak widać sieć o największej liczbie sekwencji warst konwolucjnych ma najwyższe accuracy, jednak jest ono niewiele większe niż accuracy zbioru drugiego. Możemy zatem wnioskować, że dodawanie kolejnych sekwencji konwolucyjnych nie wiele by dało. Warto natomiast zwrócić uwagę na zbieżność każdej z sieci. Porównajmy zatem wykresy accuracy sieci dużej i średniej.
+
+
+
+>     brain_big.plot_accuracy()
+
+![png](images/Raport PD-2/output_9_0.png){height=30%}
+
+>     brain_medium.plot_accuracy()
+
+![png](images/Raport PD-2/output_9_1.png){height=30%}
+
+
+Na pierwszym obrazku jest sieć duża, a na drugim średnia. Jak widać sieć duża trochę szybciej zbiega do optymalnego rozwiązania, niż sieć średnia. Może być to związne z tym, że jeśli sieć ma więcej parametrów nie musi ich tak dokładnie optymalizować jak sieć o mniejszej liczbie parametrów.
+
+## Porównanie wpływu liczby filtrów w warstwach konwolucyjnych
+
+W poprzedniej części sprawdzaliśmy jaki wpływ ma dodawanie większej liczby warstw konwolucjnych. W tej zajmiemy się natomiast wielkością każdej warsty czyli liczbą filtrów konwolucyjnych. Poprzednie rozważania możemy nazwać rozszerzaniem sieci wzdłuż, a te rozszerzaniem sieci wszerz.
+
+Podstawową siecią, będzie sieć o dwóch warstw konwolucyjnych, warstwy MaxPool i dwóch warst fully-connected.
+
+
+![png](images/Raport PD-2/output_18_0.png){height=30%}
+
+
+Jak widać sieć o najmniejszej liczbie filtrów posiada dużo mniejsze zdolności nauczenia się danych niż sieć o dużej liczbie filtrów. Sprawdźmy jak wygląda liczba paramtetrów tych sieci.
+
+![png](images/Raport PD-2/output_22_0.png){height=30%}
+
+
+Jak widać liczba parametrów rośnie wykładniczo w stosunku do liczby filtrów w warstwach konwolucjnych.
+
+Ciekawym wnioskiem z tego eksperymentu jest porównanie tempa rośnięcia accuracy oraz liczby parametrów. Jak widać accuracy rośnie dość liniowo, natomiast liczba parametrów wykładniczo. Jest to jedna z przeszkód z tworzeniem coraz większych sieci. W pewnym momencie zysk na accuracy jest zbyt mały w stosunku do potrzeb obliczeniowych by nauczyć wielkie sieci.
+
+Dodatkowo w przypadku sieci o dużej liczbie parametrów istnieje możliwość przeuczenia modelu, tak by jego wynik na zbiorze testowym był znacząco niższy niż na zbiorze treningowym. By tego uniknąć stosowaliśmy metodę `dropout` i `BatchNorm` o czym więcej w dalszej części raportu.
+
+## Wpływ learnig rate na proces ucznia modelu.
+
+Najważniejszym paramtrem procesu uczenia jest `learning_rate`. Odpowiada on za za szybkość zmiany wag w podstawowym modelu na podstawie gradientu wag. W poniższej sekcji zbadamy jak wybór tego hiperparametru wpływa na proces uczenia. Wybraliśmy sieć podobną do sieci w poprzednim zadaniu i zbadamy jak zachowuję się proces jej uczenia w zależności od wyboru `learning_rate`.
+
+
+Porównajmy krzywę uczenia tych trzech modeli z odpowiednio `learning_rate = 0.01, 0.1 i 1`.
+
+![png](images/Raport PD-2/output_31_0.png){height=30%}
+
+
+Jak widać sieć z `learnig_rate=1` nie zbiega i zachowuje się bardzo losowo. Jest to za duża wartość tego parametru i nie prowadzi ona do żadnych sensownych wyników. Natomiast porównując `learning_rate=0.1` z `learning_rate=0.01` możemy dojść do wniosków, że o ile większa wartość tego parametru powoduje szybsze uczenie modelu, to jednak model z mniejszą wartością jest w stanie lepiej nauczyć się danych. Jest to spowodowane najpewniej tym, że w końcowych etapach uczenia, musimy bardzo powoli zmieniać parametry by nie przestrzelić optimum.
+
+Patrząc na powyższy wykres można również dojść do wniosku, że najlepiej kilkanaście pierwszych epoków nauczyć na dość dużym `learning_rate` i potem w miarę osiągania przez sieć coraz lepszych wyników go zmniejszać. Jest to praktyka używana w wielu modelach praktycznych, ponieważ znacznie zmniejsza czas uczenia.
+
+## Test obróbki wstępnej danych wejściowych w zbiorze treningowym.
+
+W bibliotece `pytorch` której używamy do budowy sieci konwolucjnych zostało zaprogramowane wiele różnych opcji zmiany obrazków wejściowych w zbiorze treningowym tak by poprawić wyniki sieci. Ważne by przekształcenia stosować tylko do zbioru treningowego, a nie testowego.
+
+Sprawdźmy jak przekształcenia pomagają zwiększyć accuracy modelu. Będziemy posługiwać się największym modelem testowanym w sekcji porównywania liczby filtrów.
+
+Rozważać będziemy przekształcenie `RandomHorizontalFlop` czyli losowe przewrócenie obrazka w pionie, oraz `noise` czyli dodanie szumu losowego do obrazka.
+
+
+![png](images/Raport PD-2/output_38_0.png){height=30%}
+
+
+Jak widać im więcej preprocessingu tym wynik na zbiorze walidacyjnym jest większy. Prawdopodobnie jest tak ponieważ dodając losowe przekształcenia uodporniamy model na więcej sytuacji w zbiorze testowym, sprawiamy, że lepiej genreralizuje problem, oraz dodajemy mu nowe *sztuczne* obserwacje do zbioru treningowego.
+
+
+
+
+\newpage
+
 ## Wykorzystanie gotowych architektur sieci neuronowych
 
 Dla każdej gotowej architektury pokażemy jak zbiegają błędy i accuracy. Wykorzystamy sieci które są już wytrenowane jak również będziemy trenować je od zera.
