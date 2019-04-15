@@ -41,13 +41,12 @@ def format_time(seconds):
 
 
 class NetworkAPI():
-    def __init__(self, model, dataloaders, name_to_save, optimizer, lr=0.01):
+    def __init__(self, model, dataloaders, name_to_save, optimizer):
         self.model=model,
         self.model=self.model[0]
         self.dataloaders=dataloaders
 
         self.name_to_save=name_to_save
-        self.lr=lr
         self.best_acc=0
         self.epochs=0
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -116,33 +115,36 @@ class NetworkAPI():
 
         return epoch_loss, epochs_acc
 
-    def train_loop(self, epochs):
+    def train_loop(self, epochs, verbose_every_epoch = 1):
         print("====== HYPERPARAMETERS ======")
         print("starting epoch=", self.epochs)
         print("epochs to go=", epochs)
-        print("Starting learning rate=", self.lr)
+        print("Starting learning rate=", self.optimizer.param_groups[0]['lr'])
         print("=" * 30)
         elapsed_start_time = time.time()
         best_val_loss = np.inf
         bad_epochs = 0
 
         for epoch in range((self.epochs),(self.epochs+epochs)):
-            print(68*'-')
+            if epoch % verbose_every_epoch == 0:
+                print(68*'-')
             train_start_time = time.time()
 
             train_loss, train_acc = self.train()
             self.train_losses.append(train_loss)
             self.train_accuracies.append(train_acc)
-            print('| Epoch: {:3d} | Time: {:6.2f}s | Train loss: {:5.2f} | Train acc: {:4.2f}|'
-              .format(epoch+1, (time.time() - train_start_time), train_loss, train_acc))
+            if epoch % verbose_every_epoch == 0:
+                print('| Epoch: {:3d} | Time: {:6.2f}s | Train loss: {:5.2f} | Train acc: {:4.2f}|'
+                  .format(epoch+1, (time.time() - train_start_time), train_loss, train_acc))
 
             val_start_time = time.time()
 
             val_loss, val_acc = self.evaluate()
             self.val_losses.append(val_loss)
             self.val_accuracies.append(val_acc)
-            print('| Epoch: {:3d} | Time: {:6.2f}s | Val loss:   {:5.2f} | Val acc:   {:4.2f}|'
-              .format(epoch+1, (time.time() - val_start_time), val_loss, val_acc))
+            if epoch % verbose_every_epoch == 0:
+                print('| Epoch: {:3d} | Time: {:6.2f}s | Val loss:   {:5.2f} | Val acc:   {:4.2f}|'
+                  .format(epoch+1, (time.time() - val_start_time), val_loss, val_acc))
 
             if val_loss < best_val_loss:
                 state = {
