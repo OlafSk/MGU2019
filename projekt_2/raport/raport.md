@@ -98,8 +98,157 @@ Rozważać będziemy przekształcenie `RandomHorizontalFlop` czyli losowe przewr
 
 Jak widać im więcej preprocessingu tym wynik na zbiorze walidacyjnym jest większy. Prawdopodobnie jest tak ponieważ dodając losowe przekształcenia uodporniamy model na więcej sytuacji w zbiorze testowym, sprawiamy, że lepiej genreralizuje problem, oraz dodajemy mu nowe *sztuczne* obserwacje do zbioru treningowego.
 
+\newpage
 
 
+## Wpływ rodzaju poolingu na skuteczność sieci
+
+Architektura sieci użytej do testów składała się z dwóch sekwencji, gdzie obie sekwencje zawierały następujący zestaw warstw:
+
+```
+[Conv -- ReLU -- BatchNorm]x2 -- Pool -- Dropout
+```
+
+Testowałem wpływ czterech wariantów poolingu: jego braku, MaxPool, AvgPool i warstwy konwolucyjnej. Każdy wariant (oprócz braku poolingu) zmniejszał o połowę wymiary obrazka. Przetestowałem wszystkie możliwe kombinacje opcji poolingu (po jednym na końcu każdej sekwencji). Każda z tych architektur została uruchomiona na 30 epok.
+
+![png](images/p2/output_3_0.png){height=30%}
+
+
+Na powyższej mapie ciepła widzimy, że różnice w uśrednionej dokładności nie różnią się zbytnio. Jednakże faworytami są warianty, które po drugiej sekwencji nie miały poolingu. Wydaj się to być zgodne z intuicją, ponieważ nie wykonując poolingu zachowujemy pełen rozmiar danych.
+
+### Wniosek
+Dość dobrym podejściem wydaje się niestosowanie poolingu, jeśli możemy sobie pozwolić na to, czyli jeśli zbiór danych nie jest nadmiernie duży i niekoniecznie zależy nam na szybkości sieci.
+
+## Wpływ BatchNorma na wyniki
+
+Do testów w tej części wykorzystałem architekturę, która nie miała żadnego poolingu i warstwę BatchNorm ma w połowie i na końcu każdej z sekwencji (dwie sekwencje, każda z dwóch zestawów: `Conv -- ReLU -- BatchNorm`). Tak więc podstawowe wyniki wyglądają następująco:
+
+| Class                   | Train  | Test  |
+|-------------------------|--------|-------|
+| airplane   | 79.86% | 80.30%|
+|  automobile | 90.24% | 90.32%|
+| bird       | 67.14% | 66.98%|
+|  cat        | 63.02% | 62.94%|
+|  deer       | 80.08% | 80.50%|
+|   dog        | 66.54% | 66.38%|
+|   frog       | 89.74% | 89.90%|
+|  horse      | 85.78% | 85.84%|
+|  ship       | 91.98% | 91.64%|
+|  truck      | 90.34% | 90.44%|
+
+Z początku spróbowałem zostawić BatchNormy tylko na koniec każdej z sekwencji:
+
+| Class                   | Train  | Test  |
+|-------------------------|--------|-------|
+| airplane   | 83.92% | 83.76%|
+| automobile | 91.62% | 91.26%|
+| bird       | 67.98% | 67.58%|
+| cat        | 69.46% | 69.86%|
+| deer       | 76.86% | 76.76%|
+| dog        | 76.32% | 76.18%|
+| frog       | 81.56% | 81.60%|
+| horse      | 88.16% | 87.88%|
+| ship       | 83.86% | 83.72%|
+| truck      | 88.24% | 87.96%|
+
+Otrzymane wyniki są dość zbliżone do tych powyższych. Średnia skuteczność nieznacznie wzrosła (ok. 0.5%), jednakże wariancja zmalała o ok. 3.3%. Można zatem powiedzieć, że ograniczenie liczby BatchNormów w tym konkretnym przypadku skutkuje "ustabilizowaniem się" skuteczności sieci.
+
+Idąc tym tropem postanowiłem usunąć kolejną warstwę BatchNorm tak, żeby została tylko jedna na końcu pierwszej sekwencji.
+
+
+
+![png](images/p2/output_11_1.png){width=50%} \ ![png](images/p2/output_11_2.png){width=50%}
+
+
+| Class                   | Train  | Test  |
+|-------------------------|--------|-------|
+    |  airplane   | 70.76% | 70.72%|
+    |  automobile | 88.08% | 88.08%|
+    |  bird       | 64.22% | 64.14%|
+    |  cat        | 59.32% | 58.82%|
+    |  deer       | 66.72% | 66.54%|
+    |  dog        | 49.02% | 49.20%|
+    |  frog       | 82.06% | 81.54%|
+    |  horse      | 77.86% | 77.66%|
+    |  ship       | 86.16% | 86.18%|
+    |  truck      | 85.24% | 84.84%|
+    
+
+Ten eksperyment nie przyniósł pozytywnego rezultatu dla skuteczności sieci. Średnia wartość dokładności predykcji spadła aż o 8%, a niektóre kategorie były klasyfikowane ze skutecznością mniejszą o ponad 15%. Patrząc na wykres błędu momentalnie rzuca się oscylacja błędu z dość dużą amplitudą.
+
+Kolejną próbę podjąłem pozostawiając jedną sekwencję tak jak w wyjściowej architekturze, to jest dwa BatchNormy, a drugą pozbawiłem warst BatchNormowych. Efekt podobnie jak powyżej nie był zadowalający, ponieważ skuteczność predykcji zmalała, co przedstawia poniższa tabela:
+
+| Class                   | Train  | Test  |
+|-------------------------|--------|-------|
+|  airplane   | 81.58% | 81.70%|
+|  automobile | 82.62% | 83.08%|
+|  bird       | 67.02% | 66.96%|
+|  cat        | 36.74% | 37.32%|
+|  deer       | 52.08% | 51.98%|
+|  dog        | 69.80% | 70.10%|
+|  frog       | 85.84% | 86.20%|
+|  horse      | 66.96% | 66.32%|
+|  ship       | 82.62% | 82.60%|
+|  truck      | 87.36% | 87.26%|
+
+Ostatnią próbą było odwrócenie poprzedniego przypadku, to jest dwa BatchNormy w drugiej sekwencji i brak w pierwszej. Efekt okazał się lepszy niż poprzednio o średnio 5% na skuteczności predykcji klas zbioru testowego.
+
+### Wniosek
+
+Największą skutecznością odznaczyła się struktura sieci, która tylko raz na sekwencję (czyli `[Conv -- Relu]x2 -- Batch`) występuje warstwa normująca. Jendakże nadmierna redukcja liczby warstw normujących miała złe skutki na możliwościach klasyfikacyjnych sieci.
+
+## Wpływ Dropoutu na wyniki
+
+Tutaj punktem wyjściowym była taka sama struktura jak w poprzedniej części. Swoje testy rozpocząłem od usunięcia Dropoutu z obu sekwencji. Oryginalnie był to Dropout z parametrami, odpowiednio, 0.2 i 0.3 dla pierwszej i drugiej sekwencji.
+
+
+![png](images/p2/output_18_1.png){width=50%} \ ![png](images/p2/output_18_2.png){width=50%}
+
+
+| Class                   | Train  | Test  |
+|-------------------------|--------|-------|
+    | airplane   | 91.86% | 91.56%|
+    |  automobile | 93.56% | 93.72%|
+    |  bird       | 81.22% | 80.98%|
+    |  cat        | 81.40% | 81.14%|
+    |deer       | 87.68% | 88.06%|
+    | dog        | 86.60% | 86.50%|
+    | frog       | 91.50% | 91.70%|
+    |  horse      | 92.02% | 91.92%|
+    |  ship       | 93.66% | 93.84%|
+    |  truck      | 94.94% | 95.06%|
+    
+
+Wyniki są takie jakich byśmy oczekiwali. Sieć ma teraz ułatwione uczenie się ze względu na to, że cały czas ma do dyspozycji wszystkie neurony. Jednakże skutkować to będzie w przeuczeniu się sieci lub kładzeniu ogromnej wagi na tylko parę jednostek.
+
+W kolejnym etapie testowania dodałem dość duży Dropout (równy 0.5) na końcu pierwszej sekwencji, gdzie wyjściowa architektura miała Dropout 0.2 dla pierwszej sekwencji i 0.3 dla drugiej sekwencji. 
+
+
+![png](images/p2/output_21_1.png){width=50%} \ ![png](images/p2/output_21_2.png){width=50%}
+
+| Class                   | Train  | Test  |
+|-------------------------|--------|-------|
+    | airplane   | 86.34% | 86.40%|
+    | automobile | 92.22% | 92.24%|
+    |  bird       | 71.44% | 71.64%|
+    |  cat        | 70.90% | 71.60%|
+    | deer       | 81.16% | 81.08%|
+    | dog        | 77.14% | 77.08%|
+    |  frog       | 81.22% | 81.68%|
+    | horse      | 86.90% | 86.76%|
+    |  ship       | 91.44% | 91.32%|
+    |  truck      | 88.68% | 88.56%|
+ 
+
+Ten wariant uzyskał nieco lepsze wyniki (uśrednione 2% skuteczności i wariancja pomniejszona o 4%) niż wyjściowa architektura.
+
+Poniższy wykres pokazuje nam zależność między skutecznością (wielkość kropek), a wartościami współczynnika Dropout na końcach poszczególnych sekwencji. Widoczny jest trend taki, że im mniejszy dropout tym skuteczniejsza sieć. Jednakże wydaje się to być efektem przeuczenia sieci do danego zbioru.
+
+
+![png](images/p2/output_24_0.png){height=30%}
+
+### Wniosek
+Wydawać by się mogło, że brak DropOutu jest najlepszą opcją. To błędne przekonanie najpewniej wynika stąd, że w przypadku testowania tylko na jednym zbiorze nie dostrzegamy potrzeby generalizacji modelu, a właśnie za generalizację modelu odpowiada odpowiednio dobrany DropOut. Dlatego zbadanie wpływu tego parametru wymagałoby dodatkowych testów.
 
 \newpage
 
